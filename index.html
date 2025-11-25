@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>100m Geofenced Google Form</title>
+<title>Geofenced Google Form</title>
+
 <style>
     body {
         background: #000;
@@ -13,9 +14,13 @@
         padding: 20px;
     }
     #message {
-        font-size: 20px;
-        font-weight: bold;
-        margin-top: 15px;
+        font-size: 22px;
+        margin-top: 10px;
+    }
+    #accuracy {
+        font-size: 16px;
+        color: #fff88a;
+        margin-top: 5px;
     }
     #distance {
         font-size: 18px;
@@ -34,15 +39,16 @@
         border: 4px solid #444;
         font-size: 32px;
         font-weight: bold;
+        transition: all 0.3s ease;
     }
-    #formContainer iframe {
+    iframe {
         width: 100%;
-        height: 620px;
+        height: 600px;
         border: 1px solid #444;
-        border-radius: 8px;
+        border-radius: 10px;
         margin-top: 15px;
     }
-    #retryBtn, #fallbackBtn {
+    button {
         background: #444;
         color: #fff;
         border: none;
@@ -62,117 +68,136 @@
 <div id="circle">0m</div>
 <p id="message">Checking your location…</p>
 <p id="distance"></p>
+<p id="accuracy"></p>
 
 <button id="retryBtn">Retry GPS</button>
-<button id="fallbackBtn">Open Form Manually</button>
+<button id="openManually">Open Form Manually</button>
+<button id="openMap">Open Target Location on Map</button>
 
 <div id="formContainer" style="display:none;">
-    <iframe 
+    <iframe id="formFrame"
         src="https://docs.google.com/forms/d/e/1FAIpQLSeLi6rBSMcIp0b08-YIJM3RdP7TPjgnjR15RLnzTji1Vg9a_A/viewform?usp=header">
     </iframe>
 </div>
 
 <script>
-const ALLOWED_LAT = 25.144911;
-const ALLOWED_LNG = 75.862353;
-const ALLOWED_RADIUS = 100; // 100 meters
+/* ==========================
+      CONFIG
+========================== */
+const TARGET_LAT = 25.144911;
+const TARGET_LNG = 75.862353;
+const ALLOWED_RADIUS = 100; // meters
 
+/* ==========================
+      ELEMENTS
+========================== */
 const msg = document.getElementById("message");
-const dist = document.getElementById("distance");
+const distEl = document.getElementById("distance");
+const accEl = document.getElementById("accuracy");
 const circle = document.getElementById("circle");
 const retryBtn = document.getElementById("retryBtn");
-const fallbackBtn = document.getElementById("fallbackBtn");
+const manualBtn = document.getElementById("openManually");
+const mapBtn = document.getElementById("openMap");
 const formContainer = document.getElementById("formContainer");
+const formFrame = document.getElementById("formFrame");
 
-const siren = new Audio("https://www.soundjay.com/misc/sounds/siren-whistle-01.mp3");
+/* ==========================
+      SOUND (User Tap Safe)
+========================== */
+let siren = new Audio("https://www.soundjay.com/misc/sounds/siren-whistle-01.mp3");
 siren.volume = 1.0;
+document.body.addEventListener("click", () => {
+    siren.play().catch(()=>{});
+}, { once: true });
 
-let inside = false;
-let iframeFailed = false;
-
+/* ==========================
+      DISTANCE FUNCTION
+========================== */
 function distance(lat1, lon1, lat2, lon2) {
     const R = 6371000;
     const dLat = (lat2 - lat1) * Math.PI/180;
     const dLon = (lon2 - lon1) * Math.PI/180;
     const a = Math.sin(dLat/2)**2 +
-              Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180) *
+              Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) *
               Math.sin(dLon/2)**2;
-    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function updatePosition(pos) {
-    const ulat = pos.coords.latitude;
-    const ulng = pos.coords.longitude;
-    const d = distance(ulat, ulng, ALLOWED_LAT, ALLOWED_LNG);
-    const smooth = Math.round(d);
-    circle.textContent = smooth + "m";
-    dist.textContent = `Distance from required location: ${smooth} meters`;
+/* ==========================
+      IFRAME FAIL DETECT
+========================== */
+let iframeLoaded = false;
+formFrame.onload = () => {
+    iframeLoaded = true;
+};
+setTimeout(() => {
+    if (!iframeLoaded) {
+        formContainer.style.display = "none";
+        manualBtn.style.display = "inline-block";
+    }
+}, 5000);
 
-    if (smooth <= ALLOWED_RADIUS) {
+/* ==========================
+      GPS UPDATE HANDLER
+========================== */
+function updatePosition(pos) {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    const acc = pos.coords.accuracy || 0;
+
+    accEl.textContent = `GPS Accuracy: ${Math.round(acc)}m`;
+
+    const d = Math.round(distance(lat, lng, TARGET_LAT, TARGET_LNG));
+    distEl.textContent = `Distance from target: ${d} meters`;
+    circle.textContent = d + "m";
+
+    if (d <= ALLOWED_RADIUS && acc < 75) {
         msg.textContent = "You are inside the allowed area ✔";
         circle.style.borderColor = "lime";
         circle.style.color = "lime";
-        if (!inside) inside = true;
-
-        if (!iframeFailed) formContainer.style.display = "block";
-        fallbackBtn.style.display = "none";
+        formContainer.style.display = "block";
+        manualBtn.style.display = "none";
     } else {
         msg.textContent = "You are OUTSIDE the allowed area ❌";
         circle.style.borderColor = "red";
         circle.style.color = "red";
         formContainer.style.display = "none";
-        fallbackBtn.style.display = "none";
-        if (inside) {
-            siren.currentTime = 0;
-            siren.play().catch(()=>{});
-        }
-        inside = false;
+        manualBtn.style.display = "inline-block";
     }
 }
 
-function gpsError(err) {
-    msg.textContent = "Location unavailable. Please enable GPS.";
+/* ==========================
+      GPS ERROR HANDLER
+========================== */
+function gpsError() {
+    msg.textContent = "Unable to get location. Enable GPS!";
     retryBtn.style.display = "inline-block";
-    fallbackBtn.style.display = "inline-block"; // show manual form link
-    iframeFailed = true;
-    formContainer.style.display = "none";
+    manualBtn.style.display = "inline-block";
 }
 
+/* ==========================
+      GPS START
+========================== */
 function startGPS() {
-    msg.textContent = "Getting location...";
+    msg.textContent = "Locating…";
     retryBtn.style.display = "none";
-    fallbackBtn.style.display = "none";
 
     if (!navigator.geolocation) {
         gpsError();
         return;
     }
 
-    navigator.geolocation.getCurrentPosition(updatePosition, gpsError, {
-        enableHighAccuracy: true,
-        timeout: 7000,
-        maximumAge: 0
-    });
-
     navigator.geolocation.watchPosition(updatePosition, gpsError, {
         enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
+        maximumAge: 0,
+        timeout: 10000
     });
-
-    setInterval(() => {
-        navigator.geolocation.getCurrentPosition(updatePosition, gpsError, {
-            enableHighAccuracy: true,
-            timeout: 5000,
-            maximumAge: 0
-        });
-    }, 3000);
 }
 
 retryBtn.onclick = startGPS;
-fallbackBtn.onclick = () => {
-    window.open("https://docs.google.com/forms/d/e/1FAIpQLSeLi6rBSMcIp0b08-YIJM3RdP7TPjgnjR15RLnzTji1Vg9a_A/viewform?usp=header","_blank");
-};
+manualBtn.onclick = () => window.open(formFrame.src, "_blank");
+mapBtn.onclick = () =>
+    window.open(`https://www.google.com/maps?q=${TARGET_LAT},${TARGET_LNG}`, "_blank");
 
 startGPS();
 </script>
