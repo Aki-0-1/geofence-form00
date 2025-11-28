@@ -3,78 +3,145 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Geofenced Google Form</title>
+<title>Ultra-Accurate Geofenced Google Form</title>
 
 <style>
     body {
-        background: #000;
+        background: #1a0000;
         color: #fff;
         font-family: Arial, sans-serif;
         text-align: center;
-        padding: 20px;
+        padding: 10px;
+        margin: 0;
     }
-    #message {
-        font-size: 22px;
-        margin-top: 10px;
-    }
-    #accuracy {
-        font-size: 16px;
-        color: #fff88a;
-        margin-top: 5px;
-    }
-    #distance {
-        font-size: 18px;
-        margin-top: 10px;
-        color: #00d9ff;
-    }
+    h2 { font-size: 6vw; }
+
     #circle {
-        width: 180px;
-        height: 180px;
+        width: 50vw;
+        max-width: 200px;
+        height: 50vw;
+        max-height: 200px;
         border-radius: 50%;
-        background: #222;
+        background: #330000;
         margin: 20px auto;
         display: flex;
         justify-content: center;
         align-items: center;
-        border: 4px solid #444;
-        font-size: 32px;
+        border: 4px solid #ff4d4d;
+        font-size: 8vw;
         font-weight: bold;
-        transition: all 0.3s ease;
+        color:#ff6b6b;
+        transition: 0.3s ease;
+        box-shadow:0 0 20px #ff0000;
     }
+
     iframe {
         width: 100%;
-        height: 600px;
+        height: 75vh;
         border: 1px solid #444;
         border-radius: 10px;
         margin-top: 15px;
     }
+
     button {
-        background: #444;
+        background: #aa0000;
         color: #fff;
         border: none;
-        padding: 12px 20px;
-        font-size: 18px;
-        border-radius: 6px;
-        margin-top: 10px;
+        padding: 14px 22px;
+        font-size: 5vw;
+        border-radius: 12px;
+        margin-top: 12px;
         display: none;
         cursor: pointer;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: rgba(0,0,0,0);
+        transition: background 0.2s ease, transform 0.1s ease;
+        box-shadow:0 0 12px #ff0000;
+    }
+    button:active {
+        background: #ff0000;
+        transform: scale(0.96);
+    }
+
+    #message { font-size: 5vw; }
+    #distance { font-size: 4vw; }
+    #accuracy { font-size: 4vw; }
+    #spoof { font-size: 4vw; }
+
+    @media (min-width: 600px) {
+        h2 { font-size: 28px; }
+        button { font-size: 18px; }
+        #circle { font-size: 32px; }
+        #message, #distance, #accuracy, #spoof { font-size: 18px; }
+    }
+    /* Touch‑optimized buttons */
+    button {
+        background: #555;
+        color: #fff;
+        border: none;
+        padding: 14px 22px;
+        font-size: 5vw;
+        border-radius: 12px;
+        margin-top: 12px;
+        display: none;
+        cursor: pointer;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: rgba(0,0,0,0);
+        transition: background 0.2s ease;
+    }
+    button:active {
+        background: #777;
+        transform: scale(0.97);
+    }
+
+    /* Map preview container */
+    #map {
+        width: 100%;
+        height: 45vh;
+        border: 2px solid #444;
+        border-radius: 12px;
+        margin-top: 15px;
+        display: none;
+    }
+    /* Falling 'D' animation */
+    .falling-d {
+        position: fixed;
+        top: -50px;
+        color: #ff0000;
+        font-size: 32px;
+        font-weight: bold;
+        opacity: 0.9;
+        animation: fallD 6s linear infinite;
+        pointer-events: none;
+        z-index: 9999;
+    }
+
+    @keyframes fallD {
+        0% { transform: translateY(-50px) rotate(0deg); opacity: 1; }
+        100% { transform: translateY(120vh) rotate(360deg); opacity: 0; }
     }
 </style>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
-<h2>Location Verification</h2>
+<h1 style="font-family: 'Lexend', sans-serif; font-size: 8vw; color:#ff4d4d; text-shadow:0 0 12px #ff0000;">🎄 DealShare</h1>
+<h2 style="color:#ff6b6b; text-shadow:0 0 10px #ff0000;">Merry Christmas — Location Verification</h2>
+<div id="loader" style="font-size:20px;margin-top:10px;">Starting in <span id='countdown'>3</span>…</div>
 
 <div id="circle">0m</div>
 <p id="message">Checking your location…</p>
 <p id="distance"></p>
 <p id="accuracy"></p>
+<p id="spoof" style="color:#ff7676;font-size:16px;"></p>
 
 <button id="retryBtn">Retry GPS</button>
 <button id="openManually">Open Form Manually</button>
 <button id="openMap">Open Target Location on Map</button>
 
-<div id="formContainer" style="display:none;">
+<div id="map"></div>
+
+<div id="formContainer"" style="display:none;">
     <iframe id="formFrame"
         src="https://docs.google.com/forms/d/e/1FAIpQLSeLi6rBSMcIp0b08-YIJM3RdP7TPjgnjR15RLnzTji1Vg9a_A/viewform?usp=header">
     </iframe>
@@ -84,9 +151,13 @@
 /* ==========================
       CONFIG
 ========================== */
-const TARGET_LAT = 25.144911;
-const TARGET_LNG = 75.862353;
-const ALLOWED_RADIUS = 100; // meters
+const TARGET = { lat: 25.144911, lng: 75.862353 };
+const ALLOWED_RADIUS = 50; // Updated radius for higher security // SHORTER RADIUS (HIGH SECURITY)
+
+// Ultra-accuracy settings
+const SAMPLE_COUNT = 12;      // collect 12 readings
+const MIN_ACCURACY = 30;      // reject accuracy worse than 30m
+const JUMP_LIMIT = 40;        // reject jump >40m between samples
 
 /* ==========================
       ELEMENTS
@@ -95,6 +166,7 @@ const msg = document.getElementById("message");
 const distEl = document.getElementById("distance");
 const accEl = document.getElementById("accuracy");
 const circle = document.getElementById("circle");
+const spoofEl = document.getElementById("spoof");
 const retryBtn = document.getElementById("retryBtn");
 const manualBtn = document.getElementById("openManually");
 const mapBtn = document.getElementById("openMap");
@@ -102,57 +174,187 @@ const formContainer = document.getElementById("formContainer");
 const formFrame = document.getElementById("formFrame");
 
 /* ==========================
-      SOUND (User Tap Safe)
-========================== */
-let siren = new Audio("https://www.soundjay.com/misc/sounds/siren-whistle-01.mp3");
-siren.volume = 1.0;
-document.body.addEventListener("click", () => {
-    siren.play().catch(()=>{});
-}, { once: true });
-
-/* ==========================
-      DISTANCE FUNCTION
+      DISTANCE CALC
 ========================== */
 function distance(lat1, lon1, lat2, lon2) {
     const R = 6371000;
     const dLat = (lat2 - lat1) * Math.PI/180;
     const dLon = (lon2 - lon1) * Math.PI/180;
     const a = Math.sin(dLat/2)**2 +
-              Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) *
+              Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180) *
               Math.sin(dLon/2)**2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
 /* ==========================
-      IFRAME FAIL DETECT
+   ANTI-SPOOFING DETECTION
 ========================== */
-let iframeLoaded = false;
-formFrame.onload = () => {
-    iframeLoaded = true;
-};
-setTimeout(() => {
-    if (!iframeLoaded) {
-        formContainer.style.display = "none";
-        manualBtn.style.display = "inline-block";
+let lastPos = null;
+function detectSpoof(pos) {
+    const acc = pos.coords.accuracy;
+    if (acc > 100) return "Inaccurate signal (Possible mock)";
+
+    if (pos.coords.speed > 40) return "Impossible speed (Fake GPS suspected)";
+
+    if (lastPos) {
+        const d = distance(lastPos.lat, lastPos.lng, pos.coords.latitude, pos.coords.longitude);
+        const dt = (pos.timestamp - lastPos.time) / 1000;
+        if (dt > 0 && d/dt > 20) return "Unreal movement detected";
     }
-}, 5000);
+
+    return null;
+}
 
 /* ==========================
-      GPS UPDATE HANDLER
+   ACCURACY AVERAGING ENGINE
 ========================== */
-function updatePosition(pos) {
-    const lat = pos.coords.latitude;
-    const lng = pos.coords.longitude;
-    const acc = pos.coords.accuracy || 0;
+let samples = [];
 
-    accEl.textContent = `GPS Accuracy: ${Math.round(acc)}m`;
+function function processPosition(pos) {
+    const spoofMsg = detectSpoof(pos);
+    if (spoofMsg) {
+        spoofEl.textContent = spoofMsg;
+        formContainer.style.display = "none";
+        return;
+    } else spoofEl.textContent = "";
 
-    const d = Math.round(distance(lat, lng, TARGET_LAT, TARGET_LNG));
+    const { latitude, longitude, accuracy } = pos.coords;
+
+    // Update map in real-time
+    function initMap(lat, lng) {
+    const currentPoint = new google.maps.LatLng(lat, lng);
+
+    if (!map) {
+        map = new google.maps.Map(document.getElementById('map'), {
+            center: currentPoint,
+            zoom: 18,
+            disableDefaultUI: true,
+            gestureHandling: 'greedy',
+            backgroundColor: '#000'
+        });
+
+        // Animated marker
+        marker = new google.maps.Marker({
+            position: currentPoint,
+            map: map,
+            animation: google.maps.Animation.DROP,
+            icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 7,
+                fillColor: '#00d9ff',
+                fillOpacity: 1,
+                strokeWeight: 2,
+                strokeColor: '#fff'
+            }
+        });
+
+        // Accuracy heatmap
+        heatmapLayer = new google.maps.visualization.HeatmapLayer({
+            data: [currentPoint],
+            map: map,
+            radius: 35,
+            opacity: 0.7,
+            gradient: [
+                'rgba(0, 255, 255, 0)',
+                'rgba(0, 200, 255, 1)',
+                'rgba(0, 120, 255, 1)',
+                'rgba(0, 50, 255, 1)',
+                'rgba(255, 0, 0, 1)'
+            ]
+        });
+
+        document.getElementById('map').style.display = 'block';
+    } else {
+        // Smooth animation
+        map.panTo(currentPoint);
+        marker.setPosition(currentPoint);
+
+        // Add heat point for accuracy map
+        const heatData = heatmapLayer.getData();
+        heatData.push(currentPoint);
+        heatmapLayer.setData(heatData);
+    }
+}(latitude, longitude);
+
+    accEl.textContent = `GPS Accuracy: ${Math.round(accuracy)}m`;
+
+    if (accuracy > MIN_ACCURACY) return;
+
+    if (lastPos) {
+        const jump = distance(lastPos.lat, lastPos.lng, latitude, longitude);
+        if (jump > JUMP_LIMIT) return;
+    }
+
+    lastPos = { lat: latitude, lng: longitude, time: pos.timestamp };
+    samples.push({ lat: latitude, lng: longitude, acc: accuracy });
+
+    if (samples.length < SAMPLE_COUNT) {
+        msg.textContent = `Improving accuracy… (${samples.length}/${SAMPLE_COUNT})`;
+        return;
+    }
+
+    samples.sort((a,b) => a.acc - b.acc);
+    const best = samples.slice(0,5);
+    const avgLat = best.reduce((s,p)=>s+p.lat,0)/best.length;
+    const avgLng = best.reduce((s,p)=>s+p.lng,0)/best.length;
+
+    const d = Math.round(distance(avgLat, avgLng, TARGET.lat, TARGET.lng));
+
     distEl.textContent = `Distance from target: ${d} meters`;
     circle.textContent = d + "m";
 
-    if (d <= ALLOWED_RADIUS && acc < 75) {
-        msg.textContent = "You are inside the allowed area ✔";
+    if (d <= ALLOWED_RADIUS) {
+        msg.textContent = "Location Verified ✔";
+        circle.style.borderColor = "lime";
+        circle.style.color = "lime";
+        formContainer.style.display = "block";
+        manualBtn.style.display = "none";
+    } else {
+        msg.textContent = "You are OUTSIDE the allowed area ❌";
+        circle.style.borderColor = "red";
+        circle.style.color = "red";
+        formContainer.style.display = "none";
+        manualBtn.style.display = "inline-block";
+    }
+}(pos) {
+    const spoofMsg = detectSpoof(pos);
+    if (spoofMsg) {
+        spoofEl.textContent = spoofMsg;
+        formContainer.style.display = "none";
+        return;
+    } else spoofEl.textContent = "";
+
+    const { latitude, longitude, accuracy } = pos.coords;
+    accEl.textContent = `GPS Accuracy: ${Math.round(accuracy)}m`;
+
+    if (accuracy > MIN_ACCURACY) return; // reject bad readings
+
+    if (lastPos) {
+        const jump = distance(lastPos.lat, lastPos.lng, latitude, longitude);
+        if (jump > JUMP_LIMIT) return; // reject jumps
+    }
+
+    lastPos = { lat: latitude, lng: longitude, time: pos.timestamp };
+    samples.push({ lat: latitude, lng: longitude, acc: accuracy });
+
+    if (samples.length < SAMPLE_COUNT) {
+        msg.textContent = `Improving accuracy… (${samples.length}/${SAMPLE_COUNT})`;
+        return;
+    }
+
+    // Average the best 5 points
+    samples.sort((a,b) => a.acc - b.acc);
+    const best = samples.slice(0,5);
+    const avgLat = best.reduce((s,p)=>s+p.lat,0)/best.length;
+    const avgLng = best.reduce((s,p)=>s+p.lng,0)/best.length;
+
+    const d = Math.round(distance(avgLat, avgLng, TARGET.lat, TARGET.lng));
+
+    distEl.textContent = `Distance from target: ${d} meters`;
+    circle.textContent = d + "m";
+
+    if (d <= ALLOWED_RADIUS) {
+        msg.textContent = "Location Verified ✔";
         circle.style.borderColor = "lime";
         circle.style.color = "lime";
         formContainer.style.display = "block";
@@ -167,7 +369,7 @@ function updatePosition(pos) {
 }
 
 /* ==========================
-      GPS ERROR HANDLER
+      ERROR HANDLER
 ========================== */
 function gpsError() {
     msg.textContent = "Unable to get location. Enable GPS!";
@@ -176,30 +378,137 @@ function gpsError() {
 }
 
 /* ==========================
-      GPS START
+      START GPS
 ========================== */
-function startGPS() {
-    msg.textContent = "Locating…";
-    retryBtn.style.display = "none";
+function // Real-time map rendering
+let map, marker, heatmapLayer;
+function initMap(lat, lng) {
+    if (!map) {
+        map = new google.maps.Map(document.getElementById('map'), {
+            center: { lat, lng },
+            zoom: 18,
+            disableDefaultUI: true,
+            gestureHandling: 'greedy',
+            styles: [
+            { elementType: 'geometry', stylers: [{ color: '#1d1d1d' }] },
+            { elementType: 'labels.text.fill', stylers: [{ color: '#ffffff' }] },
+            { elementType: 'labels.text.stroke', stylers: [{ color: '#000000' }] },
+            {
+                featureType: 'poi',
+                elementType: 'geometry',
+                stylers: [{ color: '#2b2b2b' }]
+            },
+            {
+                featureType: 'road',
+                elementType: 'geometry',
+                stylers: [{ color: '#333333' }]
+            },
+            {
+                featureType: 'water',
+                elementType: 'geometry',
+                stylers: [{ color: '#111111' }]
+            }
+        ]
+        });
 
-    if (!navigator.geolocation) {
-        gpsError();
-        return;
+        marker = new google.maps.Marker({
+            position: { lat, lng },
+            map: map,
+            icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 7,
+                fillColor: '#00d9ff',
+                fillOpacity: 1,
+                strokeWeight: 2,
+                strokeColor: '#fff'
+            }
+        });
+
+        document.getElementById('map').style.display = 'block';
+    } else {
+        map.setCenter({ lat, lng });
+        marker.setPosition({ lat, lng });
     }
+}
 
-    navigator.geolocation.watchPosition(updatePosition, gpsError, {
+// Replace GPS start section
+window.onload = () => {
+    let c = 3;
+    const cd = document.getElementById('countdown');
+    const loader = document.getElementById('loader');
+
+    const interval = setInterval(() => {
+        c--;
+        cd.textContent = c;
+        if (c <= 0) {
+            clearInterval(interval);
+            loader.textContent = 'Initializing…';
+
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch(()=>{});
+            }
+
+            setTimeout(() => startGPS(), 500);
+        }
+    }, 1000);
+};() {
+    samples = [];
+    msg.textContent = "Locating…";
+
+    navigator.geolocation.watchPosition(processPosition, gpsError, {
         enableHighAccuracy: true,
         maximumAge: 0,
-        timeout: 10000
+        timeout: 20000
     });
 }
 
 retryBtn.onclick = startGPS;
 manualBtn.onclick = () => window.open(formFrame.src, "_blank");
-mapBtn.onclick = () =>
-    window.open(`https://www.google.com/maps?q=${TARGET_LAT},${TARGET_LNG}`, "_blank");
+mapBtn.onclick = () => window.open(`https://www.google.com/maps?q=${TARGET.lat},${TARGET.lng}`, "_blank");
 
-startGPS();
+// Delay GPS start by 1 second after browser opens
+window.onload = () => {
+    let c = 3;
+    const cd = document.getElementById('countdown');
+    const loader = document.getElementById('loader');
+
+    const interval = setInterval(() => {
+        c--;
+        cd.textContent = c;
+        if (c <= 0) {
+            clearInterval(interval);
+            loader.textContent = 'Initializing…';
+            // Trigger fullscreen on mobile when allowed
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch(()=>{});
+            }
+            setTimeout(() => startGPS(), 500);
+        }
+    }, 1000);
+};();
+    }, 1000);
+};
+</script>
+
+<script src="https://maps.googleapis.com/maps/api/js?libraries=visualization&key=YOUR_API_KEY"></script>
+<script>
+// Create falling D elements continuously
+setInterval(() => {
+    const d = document.createElement('div');
+    d.className = 'falling-d';
+    d.textContent = 'D';
+
+    // Random horizontal position
+    d.style.left = Math.random() * 100 + 'vw';
+
+    // Random animation duration
+    d.style.animationDuration = (4 + Math.random() * 4) + 's';
+
+    document.body.appendChild(d);
+
+    // Remove after animation
+    setTimeout(() => d.remove(), 8000);
+}, 500);
 </script>
 
 </body>
