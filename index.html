@@ -1,16 +1,12 @@
 <?php
 // ===============================
-//  SERVER‑SIDE IP‑BASED GEOFENCE
+// Server-side IP Geofence
 // ===============================
-// Target location (must be approx — IP is NOT GPS accurate)
 $target_lat = 25.144911;
 $target_lng = 75.862353;
 $allowed_radius = 50; // meters
 
-// Get user IP
 $user_ip = $_SERVER['REMOTE_ADDR'];
-
-// Fetch IP geolocation (using ip-api.com)
 $geo = @json_decode(file_get_contents("http://ip-api.com/json/{$user_ip}"));
 
 $inside = false;
@@ -24,13 +20,9 @@ if ($geo && $geo->status === 'success') {
     $R = 6371000;
     $dLat = deg2rad($lat - $target_lat);
     $dLon = deg2rad($lng - $target_lng);
-
     $a = sin($dLat/2)**2 + cos(deg2rad($target_lat)) * cos(deg2rad($lat)) * sin($dLon/2)**2;
     $distance = $R * 2 * atan2(sqrt($a), sqrt(1-$a));
-
-    if ($distance <= $allowed_radius) {
-        $inside = true;
-    }
+    if ($distance <= $allowed_radius) $inside = true;
 }
 ?>
 <!DOCTYPE html>
@@ -38,41 +30,19 @@ if ($geo && $geo->status === 'success') {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Geofenced Form (IP Based)</title>
-<style>
-    body {
-        background: #1a0000;
-        color: #fff;
-        font-family: Arial, sans-serif;
-        text-align: center;
-        padding: 20px;
-    }
-    h1 {
-        font-size: 9vw;
-        font-family: 'Lexend', sans-serif;
-        color: #ff4d4d;
-        text-shadow: 0 0 12px red;
-    }
-    .card {
-        background: #330000;
-        padding: 20px;
-        border-radius: 15px;
-        box-shadow: 0 0 15px red;
-        max-width: 480px;
-        margin: auto;
-    }
-    button {
-        background: #ff0000;
-        color: #fff;
-        padding: 15px 20px;
-        border: none;
-        border-radius: 10px;
-        font-size: 20px;
-        cursor: pointer;
-        margin-top: 20px;
-    }
-</style>
+<title>DealShare Geofence</title>
 <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+    body { background:#1a0000; color:#fff; font-family:'Lexend', sans-serif; text-align:center; margin:0; padding:20px;}
+    h1 { font-size:9vw; color:#ff4d4d; text-shadow:0 0 12px red; margin:0;}
+    h2 { font-size:5vw; color:#ff6b6b; text-shadow:0 0 10px #ff0000; margin:10px 0;}
+    .card { background:#330000; padding:20px; border-radius:15px; box-shadow:0 0 15px red; max-width:480px; margin:20px auto;}
+    button { background:#ff0000; color:#fff; padding:15px 20px; border:none; border-radius:10px; font-size:5vw; cursor:pointer; margin-top:20px; display:block; width:80%; max-width:250px; margin-left:auto; margin-right:auto;}
+    button:active { background:#ff4d4d; transform:scale(0.97);}
+    /* Falling D animation using CSS only */
+    .falling-d { position:fixed; top:-50px; color:#ff0000; font-size:32px; font-weight:bold; opacity:0.8; animation:fallD linear infinite; pointer-events:none; z-index:9999;}
+    @keyframes fallD { 0% {transform:translateY(-50px) rotate(0deg);} 100% {transform:translateY(120vh) rotate(360deg);} }
+</style>
 </head>
 <body>
 
@@ -80,27 +50,29 @@ if ($geo && $geo->status === 'success') {
 <h2>Merry Christmas — Location Verification</h2>
 
 <div class="card">
-
 <?php if ($geo && $geo->status === 'success'): ?>
-
-    <p>Your detected location (via IP):<br><b><?= $geo->city ?>, <?= $geo->regionName ?>, <?= $geo->country ?></b></p>
-    <p>Accuracy: <b>LOW (IP-based, not GPS)</b></p>
-    <p>Distance from target: <b><?= round($distance) ?> meters</b></p>
+    <p>Detected location: <b><?= htmlspecialchars($geo->city.', '.$geo->regionName.', '.$geo->country) ?></b></p>
+    <p>Distance from target: <b><?= round($distance) ?> meters</b> (IP-based)</p>
 
     <?php if ($inside): ?>
         <h3 style="color:lime;">✔ Access Granted</h3>
         <button onclick="window.location='https://docs.google.com/forms/d/e/1FAIpQLSeLi6rBSMcIp0b08-YIJM3RdP7TPjgnjR15RLnzTji1Vg9a_A/viewform?usp=header'">Open Form</button>
     <?php else: ?>
         <h3 style="color:red;">❌ Access Denied</h3>
-        <p>You are outside the allowed 50m radius.</p>
+        <p>You are outside the allowed radius (IP-based).</p>
     <?php endif; ?>
 
 <?php else: ?>
     <h3 style="color:yellow;">⚠ Location Unavailable</h3>
-    <p>Your IP location could not be determined.</p>
+    <p>Could not determine your location via IP.</p>
 <?php endif; ?>
-
 </div>
+
+<!-- CSS falling D animation without JavaScript -->
+<div class="falling-d" style="left:5vw; animation-duration:4s;">D</div>
+<div class="falling-d" style="left:30vw; animation-duration:5s;">D</div>
+<div class="falling-d" style="left:60vw; animation-duration:6s;">D</div>
+<div class="falling-d" style="left:80vw; animation-duration:4.5s;">D</div>
 
 </body>
 </html>
