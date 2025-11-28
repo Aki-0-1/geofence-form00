@@ -1,78 +1,120 @@
-<?php
-// ===============================
-// Server-side IP Geofence
-// ===============================
-$target_lat = 25.144911;
-$target_lng = 75.862353;
-$allowed_radius = 50; // meters
-
-$user_ip = $_SERVER['REMOTE_ADDR'];
-$geo = @json_decode(file_get_contents("http://ip-api.com/json/{$user_ip}"));
-
-$inside = false;
-$distance = null;
-
-if ($geo && $geo->status === 'success') {
-    $lat = $geo->lat;
-    $lng = $geo->lon;
-
-    // Haversine distance
-    $R = 6371000;
-    $dLat = deg2rad($lat - $target_lat);
-    $dLon = deg2rad($lng - $target_lng);
-    $a = sin($dLat/2)**2 + cos(deg2rad($target_lat)) * cos(deg2rad($lat)) * sin($dLon/2)**2;
-    $distance = $R * 2 * atan2(sqrt($a), sqrt(1-$a));
-    if ($distance <= $allowed_radius) $inside = true;
-}
-?>
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DealShare Geofence</title>
-<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700&display=swap" rel="stylesheet">
+<title>Location Verification</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
 <style>
-    body { background:#1a0000; color:#fff; font-family:'Lexend', sans-serif; text-align:center; margin:0; padding:20px;}
-    h1 { font-size:9vw; color:#ff4d4d; text-shadow:0 0 12px red; margin:0;}
-    h2 { font-size:5vw; color:#ff6b6b; text-shadow:0 0 10px #ff0000; margin:10px 0;}
-    .card { background:#330000; padding:20px; border-radius:15px; box-shadow:0 0 15px red; max-width:480px; margin:20px auto;}
-    button { background:#ff0000; color:#fff; padding:15px 20px; border:none; border-radius:10px; font-size:5vw; cursor:pointer; margin-top:20px; display:block; width:80%; max-width:250px; margin-left:auto; margin-right:auto;}
-    button:active { background:#ff4d4d; transform:scale(0.97);}
-    /* Falling D animation using CSS only */
-    .falling-d { position:fixed; top:-50px; color:#ff0000; font-size:32px; font-weight:bold; opacity:0.8; animation:fallD linear infinite; pointer-events:none; z-index:9999;}
-    @keyframes fallD { 0% {transform:translateY(-50px) rotate(0deg);} 100% {transform:translateY(120vh) rotate(360deg);} }
+body {
+    background: #f4f4f4;
+    color: #333;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin: 0;
+}
+
+.header {
+    background: #d92727; /* red */
+    padding: 20px;
+    color: white;
+    font-size: 26px;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.container {
+    margin-top: 60px;
+    padding: 20px;
+}
+
+.msg {
+    font-size: 22px;
+}
+
+.loading {
+    color: #157f26; /* green */
+    font-weight: bold;
+}
+
+.error {
+    color: #cc0000;
+    font-weight: bold;
+}
 </style>
+
+<script>
+function checkGPS() {
+    const allowedLat = 25.1448600;
+    const allowedLng = 75.8623596;
+    const allowedRadius = 50; // 50 meters
+    const googleFormURL = "https://docs.google.com/forms/d/e/1FAIpQLSeLi6rBSMcIp0b08-YIJM3RdP7TPjgnjR15RLnzTji1Vg9a_A/viewform?usp=header";
+
+    document.getElementById("status").innerHTML =
+        "<span class='loading'>Requesting GPS location... Please allow permission.</span>";
+
+    if (!navigator.geolocation) {
+        document.getElementById("status").innerHTML =
+            "<span class='error'>Your device does not support GPS.</span>";
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(success, error, {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0
+    });
+
+    function success(position) {
+        const userLat = position.coords.latitude;
+        const userLng = position.coords.longitude;
+
+        const R = 6371000;
+        const dLat = (userLat - allowedLat) * Math.PI / 180;
+        const dLng = (userLng - allowedLng) * Math.PI / 180;
+
+        const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(allowedLat * Math.PI / 180) *
+            Math.cos(userLat * Math.PI / 180) *
+            Math.sin(dLng / 2) ** 2;
+
+        const distance = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        if (distance <= allowedRadius) {
+            window.location.href = googleFormURL;
+        } else {
+            document.getElementById("status").innerHTML =
+                "<span class='error'>❌ Access Denied — You are outside the 50m allowed radius</span>";
+        }
+    }
+
+    function error(err) {
+        if (err.code === 1) {
+            document.getElementById("status").innerHTML =
+                "<span class='error'>Permission denied. Please allow location access.</span>";
+        } else if (err.code === 2) {
+            document.getElementById("status").innerHTML =
+                "<span class='error'>Location unavailable. Try moving outdoors.</span>";
+        } else if (err.code === 3) {
+            document.getElementById("status").innerHTML =
+                "<span class='error'>GPS timeout. Please retry.</span>";
+        } else {
+            document.getElementById("status").innerHTML =
+                "<span class='error'>Unknown GPS error.</span>";
+        }
+    }
+}
+</script>
 </head>
-<body>
 
-<h1>🎄 DealShare</h1>
-<h2>Merry Christmas — Location Verification</h2>
+<body onload="checkGPS()">
 
-<div class="card">
-<?php if ($geo && $geo->status === 'success'): ?>
-    <p>Detected location: <b><?= htmlspecialchars($geo->city.', '.$geo->regionName.', '.$geo->country) ?></b></p>
-    <p>Distance from target: <b><?= round($distance) ?> meters</b> (IP-based)</p>
-
-    <?php if ($inside): ?>
-        <h3 style="color:lime;">✔ Access Granted</h3>
-        <button onclick="window.location='https://docs.google.com/forms/d/e/1FAIpQLSeLi6rBSMcIp0b08-YIJM3RdP7TPjgnjR15RLnzTji1Vg9a_A/viewform?usp=header'">Open Form</button>
-    <?php else: ?>
-        <h3 style="color:red;">❌ Access Denied</h3>
-        <p>You are outside the allowed radius (IP-based).</p>
-    <?php endif; ?>
-
-<?php else: ?>
-    <h3 style="color:yellow;">⚠ Location Unavailable</h3>
-    <p>Could not determine your location via IP.</p>
-<?php endif; ?>
+<div class="header">
+    YOUR-HEADER-TEXT-HERE
 </div>
 
-<!-- CSS falling D animation without JavaScript -->
-<div class="falling-d" style="left:5vw; animation-duration:4s;">D</div>
-<div class="falling-d" style="left:30vw; animation-duration:5s;">D</div>
-<div class="falling-d" style="left:60vw; animation-duration:6s;">D</div>
-<div class="falling-d" style="left:80vw; animation-duration:4.5s;">D</div>
+<div class="container">
+    <h2 id="status" class="msg">Loading...</h2>
+</div>
 
 </body>
 </html>
