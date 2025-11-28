@@ -1,221 +1,76 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ultra-Accurate Geofenced Google Form</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DealShare - Static Page</title>
 <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-    :root{
-        --red:#ff4d4d;
-        --bg:#1a0000;
-        --panel:#330000;
-        --accent:#00d9ff;
-    }
-    html,body{height:100%;}
-    body {
-        background: var(--bg);
-        color: #fff;
-        font-family: 'Lexend', Arial, sans-serif;
-        text-align: center;
-        padding: 10px;
-        margin: 0;
-        -webkit-font-smoothing:antialiased;
-        -moz-osx-font-smoothing:grayscale;
-    }
-
-    header{padding:8px 4px}
-    h1{font-size:8vw;color:var(--red);text-shadow:0 0 12px #ff0000;margin:6px 0}
-    h2{font-size:5vw;color:#ff6b6b;margin:6px 0;text-shadow:0 0 10px #ff0000}
-
-    #circle{
-        width:50vw;max-width:200px;height:50vw;max-height:200px;border-radius:50%;
-        background:var(--panel);margin:16px auto;display:flex;justify-content:center;align-items:center;
-        border:4px solid var(--red);font-size:8vw;font-weight:700;color:#ff6b6b;transition:0.3s ease;box-shadow:0 0 20px #ff0000;
-    }
-
-    .panel{max-width:1100px;margin:0 auto;padding:8px}
-    #controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:10px}
-
-    button{background:#aa0000;color:#fff;border:none;padding:12px 18px;border-radius:12px;font-size:4.6vw;cursor:pointer;touch-action:manipulation;box-shadow:0 0 12px #ff0000;transition:transform .08s ease,background .12s ease}
-    button:active{transform:scale(.97)}
-    @media(min-width:600px){button{font-size:16px}}
-
-    #message{font-size:4.8vw;margin:6px 0}
-    #distance,#accuracy,#spoof{font-size:4vw;margin:4px 0}
-    @media(min-width:600px){#message,#distance,#accuracy,#spoof{font-size:16px}}
-
-    #map{width:100%;height:44vh;border-radius:12px;border:2px solid #444;margin:12px 0;display:none}
-    iframe{width:100%;height:62vh;border-radius:10px;border:1px solid #444;margin-top:8px}
-
-    /* Falling 'D' */
-    .falling-d{position:fixed;top:-60px;color:var(--red);font-size:28px;font-weight:800;opacity:.95;pointer-events:none;z-index:9999;animation:fallD linear infinite}
-    @keyframes fallD{0%{transform:translateY(-60px) rotate(0);opacity:1}100%{transform:translateY(120vh) rotate(360deg);opacity:0}}
-
-    /* Loader/countdown (non-blocking) */
-    #loader{font-size:4.6vw;color:var(--red);margin-top:8px}
-    @media(min-width:600px){#loader{font-size:18px}}
-
+  body {
+    background: #1a0000;
+    color: #fff;
+    font-family: 'Lexend', sans-serif;
+    text-align: center;
+    padding: 20px;
+  }
+  h1 {
+    font-size: 10vw;
+    color: #ff4d4d;
+    text-shadow: 0 0 12px #ff0000;
+  }
+  h2 {
+    font-size: 6vw;
+    color: #ff7777;
+  }
+  p {
+    font-size: 5vw;
+    color: #ffcccc;
+  }
+  .circle {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: #330000;
+    margin: 25px auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 4px solid #ff4d4d;
+    font-size: 32px;
+    font-weight: bold;
+    color: #ff6b6b;
+    box-shadow: 0 0 20px #ff0000;
+  }
+  .notice {
+    margin-top: 20px;
+    font-size: 18px;
+    color: #ffaaaa;
+  }
+  .btn {
+    background: #aa0000;
+    color: #fff;
+    padding: 14px 22px;
+    border-radius: 10px;
+    margin: 10px 0;
+    display: inline-block;
+    text-decoration: none;
+    font-size: 20px;
+    box-shadow: 0 0 12px #ff0000;
+  }
 </style>
 </head>
 <body>
-<header>
   <h1>🎄 DealShare</h1>
-  <h2>Merry Christmas — Location Verification</h2>
-  <div id="loader">Starting in <span id="countdown">3</span>…</div>
-</header>
+  <h2>Static Christmas Page</h2>
 
-<main class="panel">
-  <div id="circle">0m</div>
-  <div id="message">Checking your location…</div>
-  <div id="distance"></div>
-  <div id="accuracy"></div>
-  <div id="spoof" style="color:#ff7676"></div>
+  <div class="circle">50m</div>
 
-  <div id="controls">
-    <button id="retryBtn" style="display:none">Retry GPS</button>
-    <button id="openManually" style="display:none">Open Form Manually</button>
-    <button id="openMap" style="display:none">Open Target on Map</button>
-  </div>
+  <p>This is the static HTML-only version.</p>
+  <p>No GPS, no map, no JavaScript.</p>
 
-  <div id="map"></div>
+  <p class="notice">To fill your form, click below:</p>
 
-  <div id="formContainer" style="display:none">
-    <iframe id="formFrame" src="https://docs.google.com/forms/d/e/1FAIpQLSeLi6rBSMcIp0b08-YIJM3RdP7TPjgnjR15RLnzTji1Vg9a_A/viewform?usp=header"></iframe>
-  </div>
-</main>
-
-<script>
-// ---------- CONFIG ----------
-const TARGET = { lat: 25.144911, lng: 75.862353 };
-const ALLOWED_RADIUS = 50;      // meters (high security)
-const SAMPLE_COUNT = 12;       // collect readings
-const MIN_ACCURACY = 30;       // max acceptable accuracy (meters)
-const JUMP_LIMIT = 40;         // reject sudden jumps (meters)
-
-// ---------- ELEMENTS ----------
-const msg = document.getElementById('message');
-const distEl = document.getElementById('distance');
-const accEl = document.getElementById('accuracy');
-const circle = document.getElementById('circle');
-const spoofEl = document.getElementById('spoof');
-const retryBtn = document.getElementById('retryBtn');
-const manualBtn = document.getElementById('openManually');
-const mapBtn = document.getElementById('openMap');
-const formContainer = document.getElementById('formContainer');
-const formFrame = document.getElementById('formFrame');
-
-// ---------- GEO HELPERS ----------
-function distance(lat1, lon1, lat2, lon2){
-  const R=6371000;const dLat=(lat2-lat1)*Math.PI/180;const dLon=(lon2-lon1)*Math.PI/180;
-  const a=Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
-  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-}
-
-// ---------- ANTI-SPOOF ----------
-let lastPos=null;
-function detectSpoof(pos){
-  const acc = pos.coords.accuracy || 9999;
-  if(acc>100) return 'Inaccurate signal (Possible mock)';
-  if(pos.coords.speed && pos.coords.speed>40) return 'Impossible speed (Fake GPS suspected)';
-  if(lastPos){
-    const d = distance(lastPos.lat,lastPos.lng,pos.coords.latitude,pos.coords.longitude);
-    const dt = (pos.timestamp - lastPos.time)/1000;
-    if(dt>0 && d/dt>20) return 'Unreal movement detected';
-  }
-  return null;
-}
-
-// ---------- ACCURACY AVERAGING ----------
-let samples = [];
-let map, marker, heatmapLayer;
-
-function initMapPoint(lat,lng){
-  const pt = new google.maps.LatLng(lat,lng);
-  if(!map){
-    map = new google.maps.Map(document.getElementById('map'),{
-      center:pt,zoom:18,disableDefaultUI:true,gestureHandling:'greedy',backgroundColor:'#000',styles:[
-        {elementType:'geometry',stylers:[{color:'#1d1d1d'}]},{elementType:'labels.text.fill',stylers:[{color:'#ffffff'}]},{elementType:'labels.text.stroke',stylers:[{color:'#000000'}]},{featureType:'poi',elementType:'geometry',stylers:[{color:'#2b2b2b'}]},{featureType:'road',elementType:'geometry',stylers:[{color:'#333333'}]},{featureType:'water',elementType:'geometry',stylers:[{color:'#111111'}]}
-      ]
-    });
-
-    marker = new google.maps.Marker({position:pt,map:map,animation:google.maps.Animation.DROP,icon:{path:google.maps.SymbolPath.CIRCLE,scale:7,fillColor:'#00d9ff',fillOpacity:1,strokeWeight:2,strokeColor:'#fff'}});
-
-    heatmapLayer = new google.maps.visualization.HeatmapLayer({data:[pt],map:map,radius:35,opacity:0.7,gradient:['rgba(0,255,255,0)','rgba(0,200,255,1)','rgba(0,120,255,1)','rgba(0,50,255,1)','rgba(255,0,0,1)']});
-    document.getElementById('map').style.display='block';
-  } else {
-    map.panTo(pt);
-    marker.setPosition(pt);
-    const d = heatmapLayer.getData(); d.push(pt); heatmapLayer.setData(d);
-  }
-}
-
-function processPosition(pos){
-  const spoof = detectSpoof(pos);
-  if(spoof){ spoofEl.textContent = spoof; formContainer.style.display='none'; return; } else spoofEl.textContent='';
-
-  const { latitude:lat, longitude:lng, accuracy } = pos.coords;
-  initMapPoint(lat,lng);
-  accEl.textContent = `GPS Accuracy: ${Math.round(accuracy)}m`;
-
-  if(accuracy>MIN_ACCURACY) return; // wait for good accuracy
-  if(lastPos){ const jump = distance(lastPos.lat,lastPos.lng,lat,lng); if(jump>JUMP_LIMIT) return; }
-
-  lastPos = {lat,lng,time:pos.timestamp}; samples.push({lat,lng,acc:accuracy});
-
-  if(samples.length < SAMPLE_COUNT){ msg.textContent = `Improving accuracy… (${samples.length}/${SAMPLE_COUNT})`; return; }
-
-  // average best n
-  samples.sort((a,b)=>a.acc-b.acc);
-  const best = samples.slice(0,5);
-  const avgLat = best.reduce((s,p)=>s+p.lat,0)/best.length;
-  const avgLng = best.reduce((s,p)=>s+p.lng,0)/best.length;
-
-  const d = Math.round(distance(avgLat,avgLng,TARGET.lat,TARGET.lng));
-  distEl.textContent = `Distance from target: ${d} meters`;
-  circle.textContent = d + 'm';
-
-  if(d <= ALLOWED_RADIUS){
-    msg.textContent = 'Location Verified ✔'; circle.style.borderColor='lime'; circle.style.color='lime'; formContainer.style.display='block'; manualBtn.style.display='none'; mapBtn.style.display='inline-block'; retryBtn.style.display='none';
-  } else {
-    msg.textContent = 'You are OUTSIDE the allowed area ❌'; circle.style.borderColor='red'; circle.style.color='red'; formContainer.style.display='none'; manualBtn.style.display='inline-block'; mapBtn.style.display='inline-block'; retryBtn.style.display='inline-block';
-  }
-}
-
-function gpsError(err){ msg.textContent='Unable to get location. Enable GPS!'; retryBtn.style.display='inline-block'; manualBtn.style.display='inline-block'; }
-
-let watchId = null;
-function startGPS(){ samples=[]; msg.textContent='Locating…'; if(!('geolocation' in navigator)){ gpsError(); return; } if(watchId) navigator.geolocation.clearWatch(watchId);
-  watchId = navigator.geolocation.watchPosition(processPosition,gpsError,{enableHighAccuracy:true,maximumAge:0,timeout:20000});
-}
-
-// buttons
-retryBtn.onclick = startGPS;
-manualBtn.onclick = ()=>window.open(formFrame.src,'_blank');
-mapBtn.onclick = ()=>window.open(`https://www.google.com/maps?q=${TARGET.lat},${TARGET.lng}`,'_blank');
-
-// FALLING Ds
-setInterval(()=>{ const d=document.createElement('div'); d.className='falling-d'; d.textContent='D'; d.style.left=(Math.random()*90)+'vw'; d.style.animationDuration=(4+Math.random()*4)+'s'; document.body.appendChild(d); setTimeout(()=>d.remove(),9000); },500);
-
-// ---------- Non-blocking countdown & auto-start ----------
-(function(){
-  let counter = 3; const cd = document.getElementById('countdown'); const loader = document.getElementById('loader');
-  cd.textContent = counter;
-  const t = setInterval(()=>{
-    counter--; cd.textContent = counter;
-    if(counter<=0){ clearInterval(t); loader.textContent='Initializing…';
-      // try to go fullscreen (best-effort)
-      if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(()=>{});
-      // start GPS after short delay so map lib can load
-      setTimeout(()=>startGPS(), 500);
-    }
-  },1000);
-})();
-
-</script>
-
-<!-- Google Maps (replace YOUR_API_KEY) -->
-<script src="https://maps.googleapis.com/maps/api/js?libraries=visualization&key=YOUR_API_KEY"></script>
+  <a class="btn" href="https://docs.google.com/forms/d/e/1FAIpQLSeLi6rBSMcIp0b08-YIJM3RdP7TPjgnjR15RLnzTji1Vg9a_A/viewform?usp=header" target="_blank">Open Google Form</a>
 
 </body>
 </html>
